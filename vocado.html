@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="ISO-8859-1">
+	<title>Vocado Form</title>
+	
+	<style>
+	body {
+  		background-image: url('yellow-and-red-light-in-the-sky.jpg');
+  		background-repeat: no-repeat;
+    	background-attachment: fixed;
+    	background-size: 100%; 
+	}
+	label {
+		text-shadow: 2px 2px 5px #fff;
+	}
+	</style>
+</head>
+<title>Vocado Form</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script type="text/javascript">
+
+// Things to do after the html is loaded on the page.
+$( window ).load( function() {
+	
+	// Hide the submit button.
+	$( '#submit-button' ).hide();
+	
+	// Calls a function to get all the doc names and associated codes.
+	get_all_doc_names_codes();
+	
+	// Things to do when a user clicks on an item in the the dropdown-menu.
+	$(".dropdown-menu").on('click', 'li a', function(){
+		// Sets the value of the dropdown-menu button to the list item the
+		// user selected.
+		$(".btn:first-child").text($(this).text());
+	    $(".btn:first-child").val($(this).text());
+	    
+	    // Calls a function to get all the keys and specs associated with the current 
+	    // doc name-code selected.
+	    var doc_code_and_name = $(this).text();
+	    var doc_code_and_name_array = doc_code_and_name.split("|");
+	    var doc_code = doc_code_and_name_array[0].trim();
+	    get_all_keys_specs_by_doc_code(doc_code);
+    });
+	
+	// Things to do when use clicks the submit button.
+	$('#submit-button').on('click', function (e) {
+		
+		var key_values_to_return = {};
+		var field_key_values = $( '.field-key-values' );
+		
+		for (var i = 0; i < field_key_values.length; i++) {
+			var field_key_div = field_key_values[i];
+			
+			var field_divs = field_key_div.getElementsByClassName("field_key");
+			field_div = field_divs[0];
+			var field_text = field_div.textContent.trim();
+			field_text = field_text.substring(0, field_text.length - 1);
+			field_text = field_text.split(' ').join('');
+			console.log(field_text);
+			
+			var value_divs = field_key_div.getElementsByClassName("field_value");
+			value_div = value_divs[0];
+			var value_text = value_div.value.trim();
+			console.log(value_text);
+			
+			key_values_to_return[field_text] = value_text;
+		}
+		
+		//ajax call to create_xml_file key_values_to_return
+		//create_xml_file($info_array)
+		console.log(key_values_to_return);
+		var key_values_json = JSON.stringify(key_values_to_return);
+		
+		console.log(key_values_json);
+		
+		$.ajax({
+			type: "POST", // The ajax call type.
+			url: "vocado_functions.php", // The name of the external PHP file.
+			data: "func=create_xml_file&info_array=" + key_values_json, // The additional data to send to the PHP file 
+					  // (e.g. function name, input parameters).
+			dataType: "text", // The datatype the function will return.
+			// Things to do if an error occurs when calling the external PHP file.
+			error: function(xhr, textStatus, errorThrown) {
+				// Shows a pop-window with data to help understand what went wrong
+				// during the call.
+				alert("Request Failed."
+					+ "\nxhr: " + xhr
+					+ "\ntext status: " + textStatus
+					+ "\nerror thrown: " + errorThrown
+				);
+			},
+			// Things to do if the call was successful.
+			success: function(result_json) {
+				// Builds the values in the dropdown-menu by appending each
+				// key value pair as a list item.
+				// for each key value pair in the json object returned, perform 
+				// these actions.
+				console.log(result_json);
+			}
+		});
+		
+		
+		
+	});
+	  
+});
+
+function get_all_doc_names_codes() {
+	
+	// Calls a function on an external PHP file via an ajax call.
+	$.ajax({
+		type: "POST", // The ajax call type.
+		url: "vocado_functions.php", // The name of the external PHP file.
+		data: "func=get_all_doc_names_codes", // The additional data to send to the PHP file 
+				  // (e.g. function name, input parameters).
+		dataType: "json", // The datatype the function will return.
+		// Things to do if an error occurs when calling the external PHP file.
+		error: function(xhr, textStatus, errorThrown) {
+			// Shows a pop-window with data to help understand what went wrong
+			// during the call.
+			alert("Request Failed."
+				+ "\nxhr: " + xhr
+				+ "\ntext status: " + textStatus
+				+ "\nerror thrown: " + errorThrown
+			);
+		},
+		// Things to do if the call was successful.
+		success: function(result_json) {
+			// Builds the values in the dropdown-menu by appending each
+			// key value pair as a list item.
+			// for each key value pair in the json object returned, perform 
+			// these actions.
+			$.each(result_json, function(key, value) {
+				if (key == "error") {
+					alert(value);
+					return;
+				}
+			    $("#dropdown-menu").append( '<li><a href="#">' + key + " | " + value + '</a></li>' );
+			});
+		}
+	});
+}
+
+function get_all_keys_specs_by_doc_code(doc_code) {
+	// ajax call to get all the keys and their specs given a document code.
+	$.ajax({
+		type: "POST", // The ajax call type.
+		url: "vocado_functions.php", // The name of the external PHP file.
+		data: "func=get_all_keys_specs_by_doc_code&doc_code=" + doc_code, // The additional data to send to the PHP file 
+				  // (e.g. function name, input parameters).
+		dataType: "json", // The datatype the function will return.
+		// Things to do if an error occurs when calling the external PHP file.
+		error: function(xhr, textStatus, errorThrown) {
+			// Shows a pop-window with data to help understand what went wrong
+			// during the call.
+			alert("Request Failed."
+				+ "\nxhr: " + xhr
+				+ "\ntext status: " + textStatus
+				+ "\nerror thrown: " + errorThrown
+			);
+		},
+		// Things to do if the call was successful.
+		success: function(result_json) {
+			if (result_json.error) {
+				alert(value);
+				return;
+			}
+			
+			$( '#fields-and-values' ).text("");
+			
+			$.each(result_json, function(doc_code_table, doc_code_row) {
+				var field_name = doc_code_row.Attribute_Name;
+					var field_and_value_div = "<div class='form-group field-key-values'>" 
+						+ "<label class='field_key' id='" + field_name + "_key' for='usr'>" + field_name + ":</label>"
+						+ "<input type='text' class='form-control field_value' id='" + field_name + "_value'>"
+						+ "</div>";
+					
+					$( '#fields-and-values' ).append(field_and_value_div);						
+			});
+			$( '#submit-button' ).show();
+		}
+	});
+}
+	  
+	  
+  </script>
+  
+</head>
+<body>
+
+
+
+<div class="container">
+<br>
+<div class="container-fluid">
+   <div class="row">
+	<img src="logo-vocado.png" class="img-responsive">
+   </div>
+</div>
+<br>
+<div class="dropdown">
+	<a aria-expanded="false" aria-haspopup="true" role="button" data-toggle="dropdown" class="btn btn-primary dropdown-toggle" href="#">
+		<span id="selected">Select a Form </span><span class="caret"></span>
+	</a>
+	<ul class="dropdown-menu" id="dropdown-menu"></ul>
+</div>
+<br>
+<div id="fields-and-values"></div>
+<button type="button" class="btn btn-success" id="submit-button">Submit</button>
+</div>
+<br><br>
+</body>
+
+</html>
